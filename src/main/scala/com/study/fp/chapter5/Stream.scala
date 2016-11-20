@@ -62,6 +62,44 @@ sealed trait Stream[+A] {
 
   def flatMap[B](f: A => Stream[B]): Stream[B] =
     foldRight[Stream[B]](Empty)((a, b) => f(a).append(b))
+
+  // Exercise 5.13
+  def zipWith[B](o: Stream[B]): Stream[(A, B)] =
+    unfold[(A, B), (Stream[A], Stream[B])]((this, o)){
+      case (Cons(h1, t1), Cons(h2, t2)) => Some((h1(), h2()), (t1(), t2()))
+      case _                            => None
+    }
+
+  def zipAll[B](o: Stream[B]): Stream[(Option[A], Option[B])] =
+    unfold[(Option[A], Option[B]), (Stream[A], Stream[B])]((this, o)){
+      case (Cons(h1, t1), Cons(h2, t2)) => Some((Some(h1()), Some(h2())), (t1(), t2()))
+      case (Cons(h1, t1), Empty)        => Some((Some(h1()), None), (t1(), Empty))
+      case (Empty, Cons(h2, t2))        => Some((None, Some(h2())), (Empty, t2()))
+      case (Empty, Empty)               => None
+    }
+
+  // Exercise 5.14
+  def startsWith[B](o: Stream[B]): Boolean = (this, o) match {
+    case (Cons(h1, t1), Cons(h2, t2)) => h1() == h2() && t1().startsWith(t2())
+    case (Empty, _)                   => false
+    case (_, Empty)                   => true
+  }
+
+  // Exercise 5.15
+  def tails: Stream[Stream[A]] =
+    unfold[Stream[A], Stream[A]](this){
+      case Empty      => None
+      case Cons(h, t) => Some((Cons(h, t), t()))
+    }
+
+  def hasSubsequence[A](s: Stream[A]): Boolean =
+    tails exists (_ startsWith s)
+
+  // Exercise 5.16
+  def scanRight[B](z: B)(f: (A, B) => B): Stream[B] =
+    foldRight[Stream[B]](cons(z, Empty)){
+      case (e, Cons(h, t)) => cons(f(e, h()), Cons(h, t))
+    }
 }
 
 case object Empty extends Stream[Nothing]
@@ -107,4 +145,20 @@ object Stream {
   def constant(n: Int): Stream[Int] = unfold[Int, Int](n)(s => Some((s, s)))
 
   def ones: Stream[Int] = unfold[Int, Int](1)(s => Some((s, s)))
+
+  // Exercise 5.13
+  def map[A, B](s: Stream[A])(f: A => B) = unfold[B, Stream[A]](s){
+    case Cons(a, b) => Some((f(a()), b()))
+    case Empty      => None
+  }
+
+  def take[A](s: Stream[A], n: Int) = unfold[A, (Int, Stream[A])]((n, s)){
+    case (c, Cons(a, b)) if c > 0 => Some(a(),(c -1, b()))
+    case _                        => None
+  }
+
+  def takeWhile[A](s: Stream[A])(p: A => Boolean) = unfold[A, Stream[A]](s) {
+    case Cons(h, t) if(p(h())) => Some((h(), t()))
+    case _                     => None
+  }
 }
