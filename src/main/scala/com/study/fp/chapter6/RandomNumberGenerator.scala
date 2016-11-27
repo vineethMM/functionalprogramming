@@ -1,4 +1,4 @@
-package com.study.fp.chpater5
+package com.study.fp.chapter6
 
 /**
  * Created by Vineeth on 21/11/16.
