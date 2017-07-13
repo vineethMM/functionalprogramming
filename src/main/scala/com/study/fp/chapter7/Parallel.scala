@@ -153,4 +153,33 @@ object Par {
     }
   }
 
+  // Is there a more general version of the parallel summation function we wrote at the
+  // beginning of this chapter? Try using it to find the maximum value of an IndexedSeq in parallel.
+  def reduce[A](ints: IndexedSeq[A], zero: A)(f: (A, A) => A): Par[A] =
+    if(ints.isEmpty)
+      unit(zero)
+    else if (ints.size <= 1)
+      unit(f(ints.head, zero))
+    else {
+      val (l,r) = ints.splitAt(ints.length/2)
+      map2(fork(reduce(l, zero)(f)), fork(reduce(r, zero)(f)))(f)
+    }
+
+  // Write a function that takes a list of paragraphs (a List[String]) and returns the total
+  // number of words across all paragraphs, in parallel. Generalize this function as much as possible.
+  def mapReduce[A, B](indexedSeq: IndexedSeq[A], zero : B)(map: A => B, reduce: (B, B) => B): Par[B] = {
+    if (indexedSeq.size <= 1)
+      unit(indexedSeq.headOption.map(map).getOrElse(zero))
+    else {
+      val (l,r) = indexedSeq.splitAt(indexedSeq.length/2)
+      map2(fork(mapReduce(l, zero)(map, reduce)), fork(mapReduce(r, zero)(map, reduce)))(reduce)
+    }
+  }
+
+  // Implement map3, map4, and map5, in terms of map2.
+  def map3[A, B, C, D](a: Par[A], b: Par[B], c: Par[C])(f: (A, B, C) => D): Par[D] =
+    map2(map2(a, b)(f.curried(_)(_)), c)(_(_))
+
+  def map4[A, B, C, D, E](a: Par[A], b: Par[B], c: Par[C], d: Par[D])(f: (A, B, C, D) => E): Par[E] =
+    map2(map2(map2(a, b)(f.curried(_)(_)), c)(_(_)), d)(_(_))
 }
