@@ -182,4 +182,28 @@ object Par {
 
   def map4[A, B, C, D, E](a: Par[A], b: Par[B], c: Par[C], d: Par[D])(f: (A, B, C, D) => E): Par[E] =
     map2(map2(map2(a, b)(f.curried(_)(_)), c)(_(_)), d)(_(_))
+
+  // Exercise 7.9
+  // Hard: Show that any fixed-size thread pool can be made to deadlock given this implementation
+  // of fork.
+  //
+  //  def fork[A](a: => Par[A]): Par[A] =
+  //   es => es.submit(new Callable[A] {
+  //     override def call: A = a(es).get
+  //   })
+  //
+  // given our fork implementation starts a new thread each time invoked any fixed size thread pool
+  // could be brought to deadlock.
+  // lets take a fixed size thread pool with size = 1
+  //
+  // with the above implementation of fork, it submits a callable which wait for another callable
+  // because `a(es)` submit a callable and returns a `Future`.
+  // with thread pool size one it is in dead lock right away.
+  //
+  // now, lets take thread pool with size = 2
+  // the call fork(fork(a)), this will come to dead lock because each invocation of fork need to
+  // submit a callable and wait for the inner callable.
+  // Similarly any fixed size thread pool can be brought to dead lock with this implementation.
+
+
 }
